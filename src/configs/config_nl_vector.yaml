@@ -8,13 +8,14 @@ visual: False
 
 
 algorithm:
-  name: PSDRL
+  name: NeuralLinear
   reward_prior: 1e-1
   transition_prior: 1e-3
   update_freq: 1e1
   warmup_length: 1e1
   warmup_freq: 1e1
   policy_noise: 0.0
+  policy_noise_decay: 1.0
   n_samples: 1
   temp: 1e-4
 
