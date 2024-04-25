@@ -75,6 +75,10 @@ class PSDRL:
             self.device,
         )
 
+        print(str(terminal_network))
+        print(str(transition_network))
+        print(str(self.value_network))
+
         self.representation_trainer = (
             RepresentationTrainer(
                 config["representation"]["training_iterations"], self.autoencoder
