@@ -1,0 +1,7 @@
+gym[atari]==0.18.3
+Pillow
+ruamel.yaml
+scikit_image
+torch
+bsuite
+gymnasium
