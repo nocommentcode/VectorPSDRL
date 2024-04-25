@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from ..agent.psdrl import PSDRL
 
 
-def init_env(suite: str, env: str, test: bool):
+def init_env(suite: str, env: str, test: bool, seed: int):
     if suite == "atari":
         full_game_name = "{}NoFrameskip-v4".format(env)
         environment = gym.make(full_game_name)
@@ -40,13 +40,13 @@ def init_env(suite: str, env: str, test: bool):
         action_space = environment.action_space.n
 
     elif suite == "bsuite":
-        environment = deep_sea.DeepSea(int(env))
+        environment = deep_sea.DeepSea(int(env), mapping_seed=seed)
         environment = gym_wrapper.GymFromDMEnv(environment)
 
         test_environment = None
         if test:
 
-            test_environment = deep_sea.DeepSea(int(env))
+            test_environment = deep_sea.DeepSea(int(env), mapping_seed=seed)
             test_environment = gym_wrapper.GymFromDMEnv(test_environment)
         action_space = environment.action_spec().num_values
     else:

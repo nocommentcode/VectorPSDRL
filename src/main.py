@@ -95,7 +95,7 @@ def main(config: dict):
     exp_config = config["experiment"]
 
     env, actions, test_env = init_env(
-        exp_config["suite"], exp_config["env"], exp_config["test"]
+        exp_config["suite"], exp_config["env"], exp_config["test"], exp_config["seed"]
     )
 
     agent = Agent(
@@ -156,6 +156,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     envs = args.env
-    for env in envs:
-        args.env = env
+    for seed in args.seed:
+        args.seed = seed
         run_on_seed(args)
