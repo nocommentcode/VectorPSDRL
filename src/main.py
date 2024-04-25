@@ -56,7 +56,9 @@ def run_experiment(
                 logger.log_episode(
                     experiment_step, train_reward=np.nan, test_reward=test_reward
                 )
-                print(f'Episode {ep}, Timestep {experiment_step}, Test Reward {test_reward}')
+                print(
+                    f"Episode {ep}, Timestep {experiment_step}, Test Reward {test_reward}"
+                )
             action = agent.select_action(current_observation, episode_step)
             observation, reward, done, _ = env.step(action)
             done = done or episode_step == time_limit
@@ -77,13 +79,14 @@ def run_experiment(
 
             if ep and save and experiment_step % save_freq == 0:
                 logger.data_manager.save(agent, experiment_step)
-        print(f'Episode {ep}, Timestep {experiment_step}, Train Reward {episode_reward}')
+        print(
+            f"Episode {ep}, Timestep {experiment_step}, Train Reward {episode_reward}"
+        )
 
         ep += 1
         logger.log_episode(
             experiment_step, train_reward=episode_reward, test_reward=np.nan
         )
-
 
 
 def main(config: dict):
@@ -95,7 +98,17 @@ def main(config: dict):
         exp_config["suite"], exp_config["env"], exp_config["test"]
     )
 
-    agent = Agent(config, actions, logger,  config["representation"]["embed_dim"] if config["visual"] else np.prod(env.observation_spec().shape), config["experiment"]["seed"])
+    agent = Agent(
+        config,
+        actions,
+        logger,
+        (
+            config["representation"]["embed_dim"]
+            if config["visual"]
+            else np.prod(env.observation_spec().shape)
+        ),
+        config["experiment"]["seed"],
+    )
     if config["load"]:
         load(agent, config["load_dir"])
 
@@ -113,24 +126,36 @@ def main(config: dict):
     )
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="./configs/config_psdrl_vector.yaml")
-    parser.add_argument("--env", type=str, default="3", help="Currently if you put an integer it makes DeepSea with the size of that integer.")
-    parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--experiment_name", type=str, default="")
-
-
-    args = parser.parse_args()
-
+def run_on_seed(args):
     with open(args.config, "r") as f:
-        yaml = YAML(typ='rt')
+        yaml = YAML(typ="rt")
         config = yaml.load(f)
-        
+
         config["experiment"]["env"] = args.env
         config["experiment"]["seed"] = args.seed
         config["experiment"]["name"] = args.experiment_name
         if config["experiment"]["suite"] == "bsuite":
-          config["replay"]["sequence_length"] = int(args.env)
-  
+            config["replay"]["sequence_length"] = int(args.env)
+
     main(config)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config", type=str, default="./configs/config_psdrl_vector.yaml"
+    )
+    parser.add_argument(
+        "--env",
+        type=str,
+        default="3",
+        help="Currently if you put an integer it makes DeepSea with the size of that integer.",
+    )
+    parser.add_argument("--seed", type=int, nargs="+", default=None)
+    parser.add_argument("--experiment_name", type=str, default="")
+
+    args = parser.parse_args()
+    envs = args.env
+    for env in envs:
+        args.env = env
+        run_on_seed(args)
