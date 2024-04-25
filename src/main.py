@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 from ruamel.yaml import YAML
 import gym
-
+import wandb
 from PSDRL.common.data_manager import DataManager
 from PSDRL.common.utils import init_env, load
 from PSDRL.common.logger import Logger
@@ -159,3 +159,4 @@ if __name__ == "__main__":
     for seed in args.seed:
         args.seed = seed
         run_on_seed(args)
+        wandb.finish()
