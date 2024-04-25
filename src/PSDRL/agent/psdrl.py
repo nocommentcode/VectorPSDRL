@@ -16,7 +16,14 @@ from ..common.settings import TP_THRESHOLD
 
 
 class PSDRL:
-    def __init__(self, config: dict, actions: list, logger: Logger, env_dim : int, seed: int = None):
+    def __init__(
+        self,
+        config: dict,
+        actions: list,
+        logger: Logger,
+        env_dim: int,
+        seed: int = None,
+    ):
         self.device = "cpu" if not config["gpu"] else "cuda:0"
         self.random_state = np.random.RandomState(seed)
 
@@ -30,13 +37,21 @@ class PSDRL:
         self.discount = config["value"]["discount"]
 
         self.dataset = Dataset(
-            logger, config["replay"], config["experiment"]["time_limit"], self.device, config["visual"], env_dim, seed
+            logger,
+            config["replay"],
+            config["experiment"]["time_limit"],
+            self.device,
+            config["visual"],
+            env_dim,
+            seed,
         )
 
-        self.autoencoder = AutoEncoder(config["representation"], self.device) if config["visual"] else None
-        terminal_network = TerminalNetwork(
-            env_dim, config["terminal"], self.device
+        self.autoencoder = (
+            AutoEncoder(config["representation"], self.device)
+            if config["visual"]
+            else None
         )
+        terminal_network = TerminalNetwork(env_dim, config["terminal"], self.device)
         transition_network = TransitionNetwork(
             env_dim,
             self.num_actions,
@@ -57,12 +72,16 @@ class PSDRL:
             transition_network,
             terminal_network,
             self.autoencoder,
-            self.device
+            self.device,
         )
 
-        self.representation_trainer = RepresentationTrainer(
-            config["representation"]["training_iterations"], self.autoencoder
-        ) if config["visual"] else None
+        self.representation_trainer = (
+            RepresentationTrainer(
+                config["representation"]["training_iterations"], self.autoencoder
+            )
+            if config["visual"]
+            else None
+        )
         self.transition_trainer = TransitionModelTrainer(
             config["transition"],
             transition_network,
@@ -104,7 +123,9 @@ class PSDRL:
         Return greedy action with respect to the current value network and all possible transitions predicted
         with the current sampled model (Equation 8).
         """
-        states, rewards, terminals, h = self.model.predict(obs, self.model.prev_state, batch=True)
+        states, rewards, terminals, h = self.model.predict(
+            obs, self.model.prev_state, batch=True
+        )
         v = self.discount * (
             self.value_network.predict(torch.cat((states, h), dim=1))
             * (terminals < TP_THRESHOLD)
