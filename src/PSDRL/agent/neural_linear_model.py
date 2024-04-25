@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+from ..agent.env_model import EnvModel
+
 from ..common.replay import Dataset
 from ..common.utils import (
     create_state_action_batch,
@@ -10,33 +12,19 @@ from ..common.utils import (
 from ..common.settings import BATCH_EMBEDDING_SIZE, BLR_COEFFICIENT, ONE_OVER_LAMBDA
 
 
-class NeuralLinearModel:
-    def __init__(
-            self,
-            config: dict,
-            state_size: int,
-            actions: torch.tensor,
-            transition_network: torch.nn.Module,
-            terminal_network: torch.nn.Module,
-            autoencoder: torch.nn.Module,
-            device: str,
-    ):
-        self.device = device
-        self.transition_network = transition_network
-        self.terminal_network = terminal_network
-        self.autoencoder = autoencoder
-        self.actions = torch.tensor(actions).to(self.device)
-        self.num_actions = len(self.actions)
-        self.state_size = state_size
-        self.prev_state = torch.zeros(self.transition_network.gru_dim).to(self.device)
+class NeuralLinearModel(EnvModel):
+    def __init__(self, config, env_dim: int, actions, device: str) -> None:
+        super().__init__(config, env_dim, actions, device)
 
         #  Posterior distribution parameters
         self.noise_variance = ONE_OVER_LAMBDA
+        config = config["algorithm"]
         self.transition_prior = config["transition_prior"]
         self.reward_prior = config["reward_prior"]
+
         self.eye = torch.eye(self.transition_network.latent_dim).to(self.device)
         self.mu = (
-            torch.zeros(state_size + 1, self.transition_network.latent_dim)
+            torch.zeros(env_dim + 1, self.transition_network.latent_dim)
             .add(self.noise_variance)
             .to(self.device)
         )
@@ -58,44 +46,23 @@ class NeuralLinearModel:
         # Random sampling from the prior
         self.sample()
 
-
-
-    def predict(
-            self,
-            x: torch.tensor,
-            h: torch.tensor,
-            batch: bool,
-    ):
+    def predict(self, obs: torch.tensor, hidden_state: torch.tensor = None):
         """
         Simulate one timestep using the current sampled model(s).
         """
-   #     states_nn, _, _, _ = self.predict_nn(x, h, uncertainty=False)
-        if batch:
-            x, h = create_state_action_batch(
-                x, self.actions, h, self.num_actions, self.device
-            )
-        
-        feature_map, h = self.transition_network.get_feature_maps(x, h)
+        if hidden_state is None:
+            hidden_state = self.prev_state
+
+        obs, h = create_state_action_batch(
+            obs, self.actions, hidden_state, self.num_actions, self.device
+        )
+
+        feature_map, h = self.transition_network.get_feature_maps(obs, h)
         matmul = self.model_samples.matmul(feature_map.T)
         prediction = matmul.squeeze().T
         states, rewards = prediction[:, :-1], prediction[:, -1]
         terminals = self.terminal_network.predict(states)
         return states, rewards.reshape(-1, 1), terminals, h
-
-
-
-    def predict_nn(self, states: torch.tensor, h: torch.tensor, uncertainty=False):
-        """
-        Simulate one timestep using the current sampled model for all possible actions for each of the states.
-        """
-        state_actions, h = create_state_action_batch(
-            states, self.actions, h, self.num_actions, self.device
-        )
-        prediction, h1 = self.transition_network.predict(state_actions, h)
-        states, rewards = prediction[:, :-1], prediction[:, -1]
-        terminals = self.terminal_network.predict(states)
-        return states, rewards.reshape(-1, 1), terminals, h1
-
 
     def encode_replay_buffer(self, dataset: Dataset):
         """
@@ -103,11 +70,11 @@ class NeuralLinearModel:
         """
         num_episodes = len(dataset.episodes)
         s_a = torch.zeros(
-            (num_episodes, dataset.max_ep_len, self.state_size + self.num_actions),
+            (num_episodes, dataset.max_ep_len, self.env_dim + self.num_actions),
             device=self.device,
         )
         y = torch.zeros(
-            (num_episodes, dataset.max_ep_len, self.state_size + 1), device=self.device
+            (num_episodes, dataset.max_ep_len, self.env_dim + 1), device=self.device
         )
         t = torch.zeros((num_episodes, dataset.max_ep_len, 1))
 
@@ -116,8 +83,8 @@ class NeuralLinearModel:
             embed_iterations = int(np.floor((ep_len - 1) / BATCH_EMBEDDING_SIZE)) + 1
             embed_idx = BATCH_EMBEDDING_SIZE
 
-            s = torch.zeros(ep_len, self.state_size, device=self.device)
-            s1 = torch.zeros(ep_len, self.state_size, device=self.device)
+            s = torch.zeros(ep_len, self.env_dim, device=self.device)
+            s1 = torch.zeros(ep_len, self.env_dim, device=self.device)
             o, a, o1, r, done = extract_episode_data([ep])
             o, a, o1, r, done = (
                 o.squeeze(),
@@ -128,15 +95,15 @@ class NeuralLinearModel:
             )
             if self.autoencoder:
                 for i in range(embed_iterations):
-                    s[
-                    i * embed_idx: i * embed_idx + BATCH_EMBEDDING_SIZE
-                    ] = self.autoencoder.embed(
-                        o[i * embed_idx: i * embed_idx + BATCH_EMBEDDING_SIZE]
+                    s[i * embed_idx : i * embed_idx + BATCH_EMBEDDING_SIZE] = (
+                        self.autoencoder.embed(
+                            o[i * embed_idx : i * embed_idx + BATCH_EMBEDDING_SIZE]
+                        )
                     )
-                    s1[
-                    i * embed_idx: i * embed_idx + BATCH_EMBEDDING_SIZE
-                    ] = self.autoencoder.embed(
-                        o1[i * embed_idx: i * embed_idx + BATCH_EMBEDDING_SIZE]
+                    s1[i * embed_idx : i * embed_idx + BATCH_EMBEDDING_SIZE] = (
+                        self.autoencoder.embed(
+                            o1[i * embed_idx : i * embed_idx + BATCH_EMBEDDING_SIZE]
+                        )
                     )
             else:
                 s = ep["states"]
@@ -160,7 +127,7 @@ class NeuralLinearModel:
             device=self.device,
         )
         targets = torch.zeros(
-            (dataset.total_num_transitions, self.state_size + 1), device=self.device
+            (dataset.total_num_transitions, self.env_dim + 1), device=self.device
         )
         h = torch.zeros(
             (num_episodes, self.transition_network.gru_dim), device=self.device
@@ -174,8 +141,8 @@ class NeuralLinearModel:
             prediction, h[unfinished_idx] = self.transition_network.get_feature_maps(
                 s_a[unfinished_idx, idx], h[unfinished_idx]
             )
-            linear_representations[add_idx: add_idx + len(prediction)] = prediction
-            targets[add_idx: add_idx + len(prediction)] = y[unfinished_idx, idx]
+            linear_representations[add_idx : add_idx + len(prediction)] = prediction
+            targets[add_idx : add_idx + len(prediction)] = y[unfinished_idx, idx]
             add_idx = add_idx + len(prediction)
 
             finished = torch.cat((finished, torch.where(t[:, idx] == 1)[0]))
@@ -211,14 +178,19 @@ class NeuralLinearModel:
             self.transition_cov = Phi * self.transition_prior
             break
 
-        for i in range(self.state_size + 1):
+        for i in range(self.env_dim + 1):
             self.mu[i] = (self.noise_variance * Phi).matmul(x.T.matmul(y[:, i]))
 
     def sample(self):
         self.randsamp[:] = torch.randn(self.N, *self.mu.shape)
         self.model_samples[:, :-1, :] = self.mu[:-1] + (
-                self.randsamp[:, :-1, :] @ self.transition_cov
+            self.randsamp[:, :-1, :] @ self.transition_cov
         )
         self.model_samples[:, -1, :] = self.mu[-1] + (
-                self.randsamp[:, -1, :] @ self.reward_cov
+            self.randsamp[:, -1, :] @ self.reward_cov
         )
+
+    def train_(self, dataset: Dataset) -> None:
+        super().train_(dataset)
+        self.update_posteriors(dataset)
+        self.sample()
