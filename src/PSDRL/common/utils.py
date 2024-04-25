@@ -29,7 +29,13 @@ def init_env(suite: str, env: str, test: bool):
         if test:
             test_environment = gym.make(full_game_name)
             test_environment = gym.wrappers.AtariPreprocessing(
-                test_environment, NOOP, FRAME_SKIP, STATE_SIZE, False, True, scale_obs=True
+                test_environment,
+                NOOP,
+                FRAME_SKIP,
+                STATE_SIZE,
+                False,
+                True,
+                scale_obs=True,
             )
         action_space = environment.action_space.n
 
@@ -56,9 +62,8 @@ def preprocess_image(image: np.array):
     """
     if len(image.shape) == 3:
         image = color.rgb2gray(image)
-    elif len(image.shape) < 2:
-        # raise NotImplementedError("Observation is not an image!")
-        return image, False
+    elif len(image.shape) <= 2:
+        return image.flatten(), False
     if image.shape[0] != STATE_SIZE or image.shape[1] != STATE_SIZE:
         image = Image.fromarray(image)
         image = image.resize((STATE_SIZE, STATE_SIZE), Image.NEAREST)
@@ -76,7 +81,9 @@ def expand_image(img: torch.tensor):
 def state_action_append(
     obs: torch.tensor, action: torch.tensor, n_actions: int, device: str
 ):
-    return torch.hstack((obs, F.one_hot(action.reshape(-1).long(), num_classes=n_actions).to(device)))
+    return torch.hstack(
+        (obs, F.one_hot(action.reshape(-1).long(), num_classes=n_actions).to(device))
+    )
 
 
 def create_state_action_batch(
@@ -101,7 +108,7 @@ def create_state_action_batch(
 def create_directories(env: str, algorithm: str, name: str):
     if not os.path.exists("./logdir/"):
         os.mkdir("./logdir/")
-    env_folder = "./logdir/{}".format(env.replace('/', '-'))
+    env_folder = "./logdir/{}".format(env.replace("/", "-"))
     if not os.path.exists(env_folder):
         os.mkdir(env_folder)
     folder_name = env_folder + "/" + algorithm + "-{}".format(name)
@@ -139,5 +146,10 @@ def extract_episode_data(episodes: list):
     o1 = torch.stack([ep["next_states"] for ep in episodes])
     r = torch.stack([ep["rewards"] for ep in episodes])
     t = torch.stack([ep["terminals"] for ep in episodes])
-    return o / (255 if len(o.shape) > 3 else 1), a, o1 / (255 if len(o1.shape) > 3 else 1), r, t
-
+    return (
+        o / (255 if len(o.shape) > 3 else 1),
+        a,
+        o1 / (255 if len(o1.shape) > 3 else 1),
+        r,
+        t,
+    )

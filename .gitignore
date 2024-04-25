@@ -1,0 +1,4 @@
+src/logdir/*
+**_local.yaml
+*.pyc
+src/wandb/*

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import torch
 import numpy as np
-from torch.utils.tensorboard import SummaryWriter
+import wandb
 
 from .utils import create_directories
 
@@ -21,15 +21,25 @@ class DataManager:
             config["algorithm"]["name"],
             config["experiment"]["name"],
         )
+
         with open(self.logdir + "hyper_parameters.txt", "w") as f:
             json.dump(config, f, indent=2)
-        self.writer = SummaryWriter(log_dir=self.logdir)
+
+        wandb.init(
+            project="VectorPSDRL",
+            config=config,
+            tags=[config["experiment"]["env"], config["algorithm"]["name"]],
+        )
 
     def update(self, log: dict, timestep: int):
-        for key, value in log["scalars"].items():
-            if np.isnan(value):
-                continue
-            self.writer.add_scalar(key, value, timestep)
+        wandb.log(
+            {
+                key: value
+                for key, value in log["scalars"].items()
+                if not np.isnan(value)
+            },
+            step=timestep,
+        )
         with (pathlib.Path(self.logdir) / "metrics.jsonl").open("a") as f:
             f.write(json.dumps({"Timestep": timestep, **dict(log["scalars"])}) + "\n")
 
@@ -45,4 +55,3 @@ class DataManager:
         torch.save(agent.model.transition_cov, path + "transition_cov.pt")
         with open(path + "replay.pt", "wb") as fn:
             pickle.dump(agent.dataset.episodes, fn)
-
