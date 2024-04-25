@@ -1,3 +1,6 @@
+from ..agent.env_model import EnvModel
+from ..agent.neural_linear_model import NeuralLinearModel
+
 from .psdrl import PSDRL
 from typing import TYPE_CHECKING
 
@@ -9,14 +12,15 @@ def Agent(
     config: dict,
     actions: list,
     logger: "Logger",
-    env_dim : int,
+    env_dim: int,
     seed: int = None,
 ):
-    agent = PSDRL
-    return agent(
-        config,
-        actions,
-        logger,
-        env_dim,
-        seed,
-    )
+    bayes = config["algorithm"]["name"]
+    if bayes == "NeuralLinear":
+        env_model = NeuralLinearModel
+    elif bayes == "EGreedy":
+        env_model = EnvModel
+    else:
+        raise ValueError(f"Bayes type {bayes} is not supported")
+
+    return PSDRL(config, actions, logger, env_dim, seed, env_model)
