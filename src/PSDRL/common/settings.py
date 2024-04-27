@@ -1,3 +1,4 @@
+import math
 import torch
 
 # General
@@ -32,3 +33,7 @@ VN_OPTIM = torch.optim.Adam
 # Atari
 NOOP = 30
 FRAME_SKIP = 4
+
+
+# BNN weight initialisation
+WEIGHT_INIT = lambda param: torch.nn.init.kaiming_uniform_(param, a=math.sqrt(5))
