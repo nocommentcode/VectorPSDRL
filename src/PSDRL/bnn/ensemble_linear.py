@@ -1,4 +1,4 @@
-import math
+from ..common.settings import WEIGHT_INIT
 from .bootstrapped_ensemble_layer import BootstreappedEnsembleLinear
 
 
@@ -18,22 +18,16 @@ class EnsembleLinear(BootstreappedEnsembleLinear):
     ) -> None:
         super().__init__(in_features, out_features, ensemble_size, bias, device)
         self.device = device
-        self.layers = [
-            nn.Linear(in_features, out_features, bias=False, device=self.device).to(
-                self.device
-            )
-            for _ in range(ensemble_size)
-        ]
-        self.weight = torch.stack([layer.weight for layer in self.layers]).to(device)
+        self.weight = torch.nn.Parameter(
+            torch.empty(ensemble_size, in_features, out_features)
+        )
 
         self.reset_parameters()
         self.to(device)
 
     def ensemble_forward(self, x):
-        return torch.stack([layer(mini_x) for layer, mini_x in zip(self.layers, x)]).to(
-            self.device
-        )
+        return torch.einsum("jmi,jio->jmo", x, self.weight)
 
     def reset_parameters(self):
         super().reset_parameters()
-        torch.nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        WEIGHT_INIT(self.weight)

@@ -1,4 +1,6 @@
 import math
+
+from ..common.settings import WEIGHT_INIT
 from .bootstrapped_ensemble_layer import BootstreappedEnsembleLinear
 
 
@@ -16,7 +18,7 @@ class BatchEnsembleLinear(BootstreappedEnsembleLinear):
         device=None,
         dtype=None,
     ) -> None:
-        super().__init__(in_features, out_features, ensemble_size, bias, device, dtype)
+        super().__init__(in_features, out_features, ensemble_size, bias, device)
 
         self.r = nn.Parameter(torch.Tensor(ensemble_size, in_features))
         self.s = nn.Parameter(torch.Tensor(ensemble_size, out_features))
@@ -29,8 +31,8 @@ class BatchEnsembleLinear(BootstreappedEnsembleLinear):
 
     def reset_parameters(self):
         super().reset_parameters()
-        torch.nn.init.xavier_uniform(self.r, a=math.sqrt(5))
-        torch.nn.init.kaiming_uniform_(self.s, a=math.sqrt(5))
+        WEIGHT_INIT(self.r)
+        WEIGHT_INIT(self.s)
 
     def ensemble_forward(self, x):
         # r -> J, 1, I
