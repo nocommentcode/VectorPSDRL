@@ -18,11 +18,13 @@ class PSDRL:
         actions: list,
         logger: Logger,
         env_dim: int,
+        device: str,
+        random_state: np.random.RandomState,
         seed: int = None,
         env_model=EnvModel,
     ):
-        self.device = "cpu" if not config["gpu"] else "cuda:0"
-        self.random_state = np.random.RandomState(seed)
+        self.device = device
+        self.random_state = random_state
 
         self.num_actions = len(actions)
         self.actions = torch.tensor(actions).to(self.device)
@@ -52,7 +54,7 @@ class PSDRL:
             config["transition"]["gru_dim"],
         )
 
-        self.model = env_model(config, env_dim, actions, self.device)
+        self.model = env_model
 
         self.policy_trainer = PolicyTrainer(
             config["value"],
