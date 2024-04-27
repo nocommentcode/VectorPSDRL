@@ -1,3 +1,5 @@
+import numpy as np
+from src.PSDRL.common.replay import Dataset
 from ..bnn.ensemble_linear import EnsembleLinear
 from ..bnn.batch_ensemble_layer import BatchEnsembleLinear
 from ..agent.env_model import EnvModel
@@ -40,6 +42,12 @@ class AEnsembleBNNModel(EnvModel):
             config["replay"]["batch_size"],
             self.num_actions,
             self.device,
+        )
+
+    def train_(self, dataset: Dataset) -> None:
+        super().train_(dataset)
+        dataset.logger.add_scalars(
+            "BNN/Ensemble STD", self.transition_network.flush_diversity()
         )
 
 

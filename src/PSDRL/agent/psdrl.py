@@ -123,7 +123,7 @@ class PSDRL:
         )
 
         self.epsilon = self.epsilon * self.epsilon_decay
-        self.dataset.logger.add_scalars("epsilon", self.epsilon)
+        self.dataset.logger.add_scalars("General/epsilon", self.epsilon)
 
         if ep and timestep % update_freq == 0:
             self.model.train_(self.dataset)
