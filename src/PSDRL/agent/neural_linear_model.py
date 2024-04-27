@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-
 from ..agent.env_model import EnvModel
 
 from ..common.replay import Dataset

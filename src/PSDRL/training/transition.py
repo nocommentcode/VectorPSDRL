@@ -49,7 +49,11 @@ class TransitionModelTrainer:
                     net.optimizer.zero_grad()
 
                 s = self.autoencoder.embed(o[:, idx]) if self.autoencoder else o[:, idx]
-                s1 = self.autoencoder.embed(o1[:, idx]) if self.autoencoder else o1[:, idx]
+                s1 = (
+                    self.autoencoder.embed(o1[:, idx])
+                    if self.autoencoder
+                    else o1[:, idx]
+                )
                 s_a = state_action_append(s, a[:, idx], self.num_actions, self.device)
                 s1_r_pred, self.prev_states = self.transition_network.forward(
                     s_a, self.prev_states

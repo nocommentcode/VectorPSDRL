@@ -75,7 +75,7 @@ class EnvModel:
             hidden_state = self.prev_state
 
         obs, h = create_state_action_batch(
-            obs, self.actions, h, self.num_actions, self.device
+            obs, self.actions, hidden_state, self.num_actions, self.device
         )
 
         prediction, h1 = self.transition_network.predict(obs, h)
