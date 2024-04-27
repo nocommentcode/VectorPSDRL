@@ -18,8 +18,8 @@ class Logger:
 
     def log_episode(self, timestep: int, train_reward: int, test_reward: int):
         self.add_scalars(
-            ["Reward/Train_Reward", "Reward/Test_Reward"],
-            [train_reward, test_reward],
+            ["Reward/Train_Reward", "Reward/Test_Reward", "General/Step"],
+            [train_reward, test_reward, timestep],
         )
         self.data_manager.update(self.log, timestep)
 
