@@ -1,5 +1,4 @@
-import numpy as np
-from src.PSDRL.common.replay import Dataset
+from ..common.replay import Dataset
 from ..bnn.ensemble_linear import EnsembleLinear
 from ..bnn.batch_ensemble_layer import BatchEnsembleLinear
 from ..agent.env_model import EnvModel
