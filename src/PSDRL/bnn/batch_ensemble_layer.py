@@ -46,6 +46,6 @@ class BatchEnsembleLinear(BootstreappedEnsembleLinear):
 
         # output -> J, M, O
         output = self.linear(x)
-        output = output + s
+        output = output * s
 
         return output
