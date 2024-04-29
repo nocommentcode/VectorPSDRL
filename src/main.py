@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from ruamel.yaml import YAML
 import gym
+from PSDRL.common.replay import Dataset
 import wandb
 from PSDRL.common.data_manager import DataManager
 from PSDRL.common.utils import init_env, load
@@ -28,6 +29,19 @@ def run_test_episode(env: gym.Env, agent: Agent, time_limit: int):
     return episode_reward
 
 
+def early_stop(early_stop_config, dataset: Dataset) -> bool:
+    if not early_stop_config["enabled"]:
+        return False
+
+    n_episodes = early_stop_config["n_episodes"]
+    last_n_episodes = dataset.episodes[-n_episodes:]
+
+    episode_returns = [ep["cum_rew"] for ep in last_n_episodes]
+    av_return = sum(episode_returns) / n_episodes
+
+    return av_return >= early_stop_config["threshold"]
+
+
 def run_experiment(
     env: gym.Env,
     agent: Agent,
@@ -39,6 +53,7 @@ def run_experiment(
     time_limit: int,
     save: bool,
     save_freq: int,
+    early_stop_config,
 ):
     ep = 0
     experiment_step = 0
@@ -88,6 +103,9 @@ def run_experiment(
             experiment_step, train_reward=episode_reward, test_reward=np.nan
         )
 
+        if early_stop(early_stop_config, agent.dataset):
+            break
+
 
 def main(config: dict):
     data_manager = DataManager(config)
@@ -123,6 +141,7 @@ def main(config: dict):
         exp_config["time_limit"],
         config["save"],
         config["save_freq"],
+        config["early_stop"],
     )
 
 
@@ -135,10 +154,9 @@ def run_on_seed(args):
         config["experiment"]["seed"] = args.seed
         config["experiment"][
             "name"
-        ] = f"DeepSea ({args.env}) - {config['experiment']['name']} - {args.seed}"
+        ] = f"DeepSea ({args.env}) - {config['algorithm']['name']} - {args.seed}"
         if config["experiment"]["suite"] == "bsuite":
             config["replay"]["sequence_length"] = int(args.env)
-
     main(config)
 
 
