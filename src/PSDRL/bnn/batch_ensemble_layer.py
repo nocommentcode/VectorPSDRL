@@ -1,5 +1,3 @@
-import math
-
 from ..common.settings import WEIGHT_INIT
 from .bootstrapped_ensemble_layer import BootstreappedEnsembleLinear
 
@@ -20,8 +18,8 @@ class BatchEnsembleLinear(BootstreappedEnsembleLinear):
     ) -> None:
         super().__init__(in_features, out_features, ensemble_size, bias, device)
 
-        self.r = nn.Parameter(torch.Tensor(ensemble_size, in_features))
-        self.s = nn.Parameter(torch.Tensor(ensemble_size, out_features))
+        self.r = nn.Parameter(torch.empty(ensemble_size, in_features))
+        self.s = nn.Parameter(torch.empty(ensemble_size, out_features))
 
         self.linear = nn.Linear(in_features, out_features, bias=False, device=device)
         self.weight = self.linear.weight
