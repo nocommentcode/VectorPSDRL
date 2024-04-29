@@ -127,9 +127,9 @@ def main(config: dict):
 
 
 def set_n_steps_for_env(config):
-    if config["experiment"]["env"] == 3:
+    if config["experiment"]["env"] == "3":
         config["experiment"]["steps"] = 5e3
-    elif config["experiment"]["env"] == 4:
+    elif config["experiment"]["env"] == "4":
         config["experiment"]["steps"] = 3e4
 
 
