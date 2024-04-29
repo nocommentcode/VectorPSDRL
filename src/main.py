@@ -126,6 +126,13 @@ def main(config: dict):
     )
 
 
+def set_n_steps_for_env(config):
+    if config["experiment"]["env"] == 3:
+        config["experiment"]["steps"] = 5e3
+    elif config["experiment"]["env"] == 4:
+        config["experiment"]["steps"] = 3e4
+
+
 def run_on_seed(args):
     with open(args.config, "r") as f:
         yaml = YAML(typ="rt")
@@ -138,7 +145,7 @@ def run_on_seed(args):
         ] = f"DeepSea ({args.env}) - {config['algorithm']['name']} - {args.seed}"
         if config["experiment"]["suite"] == "bsuite":
             config["replay"]["sequence_length"] = int(args.env)
-
+        set_n_steps_for_env(config)
     main(config)
 
 
