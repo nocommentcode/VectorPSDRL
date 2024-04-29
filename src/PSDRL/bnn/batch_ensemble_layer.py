@@ -24,13 +24,13 @@ class BatchEnsembleLinear(BootstreappedEnsembleLinear):
         self.linear = nn.Linear(in_features, out_features, bias=False, device=device)
         self.weight = self.linear.weight
 
-        self.to(device)
         self.reset_parameters()
+        self.to(device)
 
     def reset_parameters(self):
         super().reset_parameters()
-        WEIGHT_INIT(self.r)
-        WEIGHT_INIT(self.s)
+        nn.init.uniform_(self.r, -1, 1)
+        nn.init.uniform_(self.s, -1, 1)
 
     def ensemble_forward(self, x):
         # r -> J, 1, I
@@ -39,11 +39,7 @@ class BatchEnsembleLinear(BootstreappedEnsembleLinear):
         # s ->  J, 1, O
         s = self.s.unsqueeze(1)
 
-        # x -> J, M, I
-        x = x * r
-
         # output -> J, M, O
-        output = self.linear(x)
-        output = output * s
+        output = self.linear(x * r) * s
 
         return output
