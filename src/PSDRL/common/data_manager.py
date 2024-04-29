@@ -22,24 +22,29 @@ class DataManager:
             config["experiment"]["name"],
         )
 
+        self.log_wandb = config["log_wandb"]
+
         with open(self.logdir + "hyper_parameters.txt", "w") as f:
             json.dump(config, f, indent=2)
 
-        wandb.init(
-            project="VectorPSDRL",
-            config=config,
-            tags=[config["experiment"]["env"], config["algorithm"]["name"]],
-        )
+        if self.log_wandb:
+            wandb.init(
+                project="VectorPSDRL",
+                name=config["experiment"]["name"],
+                config=config,
+                tags=[config["experiment"]["env"], config["algorithm"]["name"]],
+            )
 
     def update(self, log: dict, timestep: int):
-        wandb.log(
-            {
-                key: value
-                for key, value in log["scalars"].items()
-                if not np.isnan(value)
-            },
-            step=timestep,
-        )
+        if self.log_wandb:
+            wandb.log(
+                {
+                    key: value
+                    for key, value in log["scalars"].items()
+                    if not np.isnan(value)
+                },
+                step=timestep,
+            )
         with (pathlib.Path(self.logdir) / "metrics.jsonl").open("a") as f:
             f.write(json.dumps({"Timestep": timestep, **dict(log["scalars"])}) + "\n")
 

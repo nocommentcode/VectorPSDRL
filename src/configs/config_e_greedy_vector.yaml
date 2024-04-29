@@ -1,0 +1,65 @@
+gpu: true
+data_dir: ""
+save: false
+save_freq: 10000
+load: false
+load_dir: "./logdir/[env]/PSDRL-[name]/[seed]/checkpoints/[timestep]/"
+visual: False
+log_wandb: True
+
+algorithm:
+  name: EGreedy
+  reward_prior: 1e-1
+  transition_prior: 1e-3
+  update_freq: 1e1
+  warmup_length: 1e1
+  warmup_freq: 1e1
+  policy_noise: 1.0
+  policy_noise_decay: 0.999
+  n_samples: 1
+  temp: 1e-4
+
+early_stop:
+  enabled: true
+  n_episodes: 250
+  threshold: 0.98
+
+
+experiment:
+  suite: bsuite
+  env: 5
+  test: true
+  steps: 1e6
+  time_limit: 27000
+  test_freq: 1e2
+  name: ""
+  seed: None
+
+replay:
+  capacity: 1e5
+  batch_size: 100
+  sequence_length: 10
+
+transition:
+  training_iterations: 100
+  hidden_dim: 1500
+  gru_dim: 1
+  learning_rate: 1e-3
+  window_length: 4
+
+value:
+  training_iterations: 100
+  hidden_dim: 1500
+  learning_rate: 1e-4
+  target_update_freq: 4
+  discount: 0.99
+
+terminal:
+  training_iterations: 100
+  hidden_dim: 1500
+  learning_rate: 1e-3
+
+representation:
+  training_iterations: 100
+  learning_rate: 1e-3
+  embed_dim: 1000

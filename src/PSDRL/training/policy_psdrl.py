@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import torch
 
-from ..bayes.neural_linear_model import NeuralLinearModel
+from ..agent.env_model import EnvModel
 from ..common.replay import Dataset
 from ..common.settings import TP_THRESHOLD
 
@@ -46,13 +46,13 @@ class PolicyTrainer:
         states: torch.tensor,
         actions: torch.tensor,
         h: torch.tensor,
-        model: NeuralLinearModel,
+        model: EnvModel,
     ):
         """
         Simulate one timestep using the sampled model, and retain the hidden states (h) that correspond to the actions
         taken as dictated by the sampled sequences for the next timestep.
         """
-        s1, r, t, h1 = model.predict(states, h, batch=True)
+        s1, r, t, h1 = model.predict(states, h)
 
         h = h1[
             (torch.arange(0, len(states)) * self.num_actions).to(self.device)
@@ -79,7 +79,7 @@ class PolicyTrainer:
         )
         return y.reshape(-1, 1)
 
-    def train_(self, model: NeuralLinearModel, dataset: Dataset):
+    def train_(self, model: EnvModel, dataset: Dataset):
         """
         Update the value network using B sequences of length L for the specified number of training iterations (kappa).
         For the states in all B sequences at a given timestep, the next states and rewards are simulated in parallel
@@ -95,7 +95,7 @@ class PolicyTrainer:
                 if idx % self.target_update_freq == 0:
                     self.target_net = deepcopy(self.value_network.layers)
 
-                s = model.autoencoder.embed(o[:, idx]) if model.autoencoder else o[:, idx]
+                s = model.embed_observation(o[:, idx])
                 inputs = torch.cat((s, self.prev_states), dim=1)
 
                 rewards, next_states, terminals, self.prev_states, h1 = self.simulate(

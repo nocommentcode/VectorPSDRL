@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 from ..common.settings import REC_CELL, TM_LOSS_F, TM_OPTIM
 
 
