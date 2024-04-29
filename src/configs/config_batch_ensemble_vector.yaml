@@ -10,7 +10,6 @@ log_wandb: True
 algorithm:
   name: BatchEnsemble
   ensemble_size: 4
-  bnn_type: batch_ensemble
   reward_prior: 1e-1
   transition_prior: 1e-3
   update_freq: 1e1

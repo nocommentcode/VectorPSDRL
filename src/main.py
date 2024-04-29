@@ -135,7 +135,7 @@ def run_on_seed(args):
         config["experiment"]["seed"] = args.seed
         config["experiment"][
             "name"
-        ] = f"DeepSea ({args.env}) - {config['experiment']['name']} - {args.seed}"
+        ] = f"DeepSea ({args.env}) - {config['algorithm']['name']} - {args.seed}"
         if config["experiment"]["suite"] == "bsuite":
             config["replay"]["sequence_length"] = int(args.env)
 
