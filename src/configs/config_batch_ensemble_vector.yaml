@@ -20,11 +20,16 @@ algorithm:
   n_samples: 1
   temp: 1e-4
 
+early_stop:
+  enabled: true
+  n_episodes: 250
+  threshold: 0.98
+
 experiment:
   suite: bsuite
   env: 5
   test: true
-  steps: 5e3
+  steps: 1e6
   time_limit: 27000
   test_freq: 1e2
   name: ""
