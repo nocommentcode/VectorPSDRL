@@ -8,17 +8,24 @@ visual: False
 log_wandb: True
 
 algorithm:
-  name: EGreedy
-  bayes: e-greedy
+  name: DeepBatchEnsemble
+  bayes: batch-ensemble
+  exploration: deep
+  ensemble_size: 4
   reward_prior: 1e-1
   transition_prior: 1e-3
   update_freq: 1e1
   warmup_length: 1e1
   warmup_freq: 1e1
-  policy_noise: 1.0
-  policy_noise_decay: 0.999
+  policy_noise: 0.0
+  policy_noise_decay: 1.0
   n_samples: 1
   temp: 1e-4
+
+early_stop:
+  enabled: true
+  n_episodes: 250
+  threshold: 0.98
 
 experiment:
   suite: bsuite
@@ -29,11 +36,6 @@ experiment:
   test_freq: 1e2
   name: ""
   seed: None
-
-early_stop:
-  enabled: true
-  n_episodes: 250
-  threshold: 0.98
 
 replay:
   capacity: 1e5

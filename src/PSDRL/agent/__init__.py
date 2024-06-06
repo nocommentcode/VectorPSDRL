@@ -11,14 +11,14 @@ if TYPE_CHECKING:
 
 
 def agent_model_factory(config, actions, env_dim, device, random):
-    bayes = config["algorithm"]["name"]
-    if bayes == "NeuralLinear":
+    bayes = config["algorithm"]["bayes"]
+    if bayes == "neural-linear":
         env_model = NeuralLinearModel(config, env_dim, actions, device)
-    elif bayes == "EGreedy":
+    elif bayes == "e-greedy":
         env_model = EnvModel(config, env_dim, actions, device)
-    elif bayes == "BatchEnsemble":
+    elif bayes == "batch-ensemble":
         env_model = BatchEnsembleBNNModel(config, env_dim, actions, device, random)
-    elif bayes == "Ensemble":
+    elif bayes == "ensemble":
         env_model = EnsembleBNNModel(config, env_dim, actions, device, random)
     else:
         raise ValueError(f"Bayes type {bayes} is not supported")

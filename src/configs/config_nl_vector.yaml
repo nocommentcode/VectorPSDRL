@@ -9,6 +9,7 @@ log_wandb: True
 
 algorithm:
   name: NeuralLinear
+  bayes: neural-linear
   reward_prior: 1e-1
   transition_prior: 1e-3
   update_freq: 1e1

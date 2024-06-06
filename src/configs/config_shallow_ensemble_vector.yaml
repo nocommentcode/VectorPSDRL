@@ -7,8 +7,11 @@ load_dir: "./logdir/[env]/PSDRL-[name]/[seed]/checkpoints/[timestep]/"
 visual: False
 log_wandb: True
 
+
 algorithm:
-  name: BatchEnsemble
+  name: ShallowEnsemble
+  bayes: ensemble
+  exploration: shallow
   ensemble_size: 4
   reward_prior: 1e-1
   transition_prior: 1e-3
