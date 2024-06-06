@@ -26,7 +26,6 @@ early_stop:
   n_episodes: 250
   threshold: 0.98
 
-
 experiment:
   suite: bsuite
   env: 5
