@@ -9,12 +9,14 @@ import wandb
 from PSDRL.common.data_manager import DataManager
 from PSDRL.common.utils import init_env, load
 from PSDRL.common.logger import Logger
+from PSDRL.agent.psdrl import PSDRL
 from PSDRL.agent import Agent
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
-def run_test_episode(env: gym.Env, agent: Agent, time_limit: int):
+def run_test_episode(env: gym.Env, agent: PSDRL, time_limit: int):
+    agent.set_to_exploitation()
     current_observation = env.reset()
     episode_step = 0
     episode_reward = 0
@@ -44,7 +46,7 @@ def early_stop(early_stop_config, dataset: Dataset) -> bool:
 
 def run_experiment(
     env: gym.Env,
-    agent: Agent,
+    agent: PSDRL,
     logger: Logger,
     test_env: gym.Env,
     steps: int,
@@ -74,6 +76,8 @@ def run_experiment(
                 print(
                     f"Episode {ep}, Timestep {experiment_step}, Test Reward {test_reward}"
                 )
+
+            agent.set_to_exploration()
             action = agent.select_action(current_observation, episode_step)
             observation, reward, done, _ = env.step(action)
             done = done or episode_step == time_limit

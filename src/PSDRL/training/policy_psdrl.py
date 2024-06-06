@@ -52,7 +52,7 @@ class PolicyTrainer:
         Simulate one timestep using the sampled model, and retain the hidden states (h) that correspond to the actions
         taken as dictated by the sampled sequences for the next timestep.
         """
-        s1, r, t, h1 = model.predict(states, h)
+        s1, r, t, h1 = model.exploration_policy(states, h)
 
         h = h1[
             (torch.arange(0, len(states)) * self.num_actions).to(self.device)

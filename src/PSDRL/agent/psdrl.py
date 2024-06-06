@@ -1,3 +1,4 @@
+import enum
 import torch
 import numpy as np
 
@@ -9,6 +10,11 @@ from ..common.utils import preprocess_image
 from ..networks.value import Network as ValueNetwork
 from ..training.policy_psdrl import PolicyTrainer
 from ..common.settings import TP_THRESHOLD
+
+
+class PolicyType(enum.Enum):
+    EXPLOITATION = 0
+    EXPLORATION = 1
 
 
 class PSDRL:
@@ -65,6 +71,14 @@ class PSDRL:
             self.actions,
         )
 
+        self.set_to_exploration()
+
+    def set_to_exploration(self):
+        self.policy = PolicyType.EXPLORATION
+
+    def set_to_exploitation(self):
+        self.policy = PolicyType.EXPLOITATION
+
     def select_action(self, obs: np.array, step: int):
         """
         Reset the hidden state at the start of a new episode. Return a random action with a probability of epsilon,
@@ -75,18 +89,22 @@ class PSDRL:
 
         if self.random_state.random() < self.epsilon:
             return self.random_state.choice(self.num_actions)
+
         obs, is_image = preprocess_image(obs)
         obs = torch.from_numpy(obs).float().to(self.device)
         obs = self.model.embed_observation(obs)
 
-        return self._select_action(obs, step)
+        if self.policy == PolicyType.EXPLORATION:
+            return self.explore(obs)
+        else:
+            return self.exploit(obs)
 
-    def _select_action(self, obs: torch.tensor, step):
+    def explore(self, obs: torch.tensor):
         """
         Return greedy action with respect to the current value network and all possible transitions predicted
         with the current sampled model (Equation 8).
         """
-        states, rewards, terminals, h = self.model.predict(obs)
+        states, rewards, terminals, h = self.model.exploration_policy(obs)
 
         v = self.discount * (
             self.value_network.predict(torch.cat((states, h), dim=1))
@@ -96,6 +114,38 @@ class PSDRL:
         action = self.random_state.choice(np.where(np.isclose(values, max(values)))[0])
         self.model.set_hidden_state(h[action])
 
+        return self.actions[action]
+
+    def exploit(self, obs: torch.tensor):
+        """
+        Return greedy action with respect to the current value network and all possible transitions predicted
+        with the current sampled model (Equation 8).
+        """
+        states, rewards, terminals, h = self.model.exploitation_policy(obs)
+        print(states.shape, rewards.shape, terminals.shape, h.shape)
+        v = self.discount * (
+            self.value_network.predict(torch.cat((states, h), dim=1))
+            * (terminals < TP_THRESHOLD)
+        )
+        values = (rewards + v).detach().cpu().numpy()
+
+        # reshape to num_predictions, actions, 1
+        values = values.reshape((-1, self.num_actions, 1))
+        print(values.shape)
+
+        # find max value action for each prediction
+        candidate_actions = []
+        for candidate in values:
+            action = self.random_state.choice(
+                np.where(np.isclose(candidate, max(candidate)))[0]
+            )
+            candidate_actions.append(action)
+
+        # find consensus
+        counts = np.bincount(np.array(candidate_actions))
+        action = np.argmax(counts)
+
+        self.model.set_hidden_state(h[action])
         return self.actions[action]
 
     def update(

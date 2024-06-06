@@ -63,6 +63,14 @@ class NeuralLinearModel(EnvModel):
         terminals = self.terminal_network.predict(states)
         return states, rewards.reshape(-1, 1), terminals, h
 
+    def exploration_policy(self, obs: torch.tensor, hidden_state: torch.tensor = None):
+        # explore -> use neural linear
+        return self.predict(obs, hidden_state)
+
+    def exploitation_policy(self, obs: torch.tensor, hidden_state: torch.tensor = None):
+        # exploit -> use normal network
+        return super().predict(obs, hidden_state)
+
     def encode_replay_buffer(self, dataset: Dataset):
         """
         Map all observations present in the replay buffer to latent states in batches of BATCH_EMBEDDING_SIZE.

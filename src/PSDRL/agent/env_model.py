@@ -83,3 +83,9 @@ class EnvModel:
         terminals = self.terminal_network.predict(states)
 
         return states, rewards.reshape(-1, 1), terminals, h1
+
+    def exploration_policy(self, obs: torch.tensor, hidden_state: torch.tensor = None):
+        return self.predict(obs, hidden_state)
+
+    def exploitation_policy(self, obs: torch.tensor, hidden_state: torch.tensor = None):
+        return self.predict(obs, hidden_state)
