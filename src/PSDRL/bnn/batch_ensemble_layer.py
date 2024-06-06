@@ -43,3 +43,15 @@ class BatchEnsembleLinear(BootstreappedEnsembleLinear):
         output = self.linear(x * r) * s
 
         return output
+
+    def single_forward(self, x, ensemble_index):
+        # r -> 1, I
+        r = self.r[ensemble_index].unsqueeze(0)
+
+        # s -> 1, O
+        s = self.s[ensemble_index].unsqueeze(0)
+
+        # output -> J, M, O
+        output = self.linear(x * r) * s
+
+        return output

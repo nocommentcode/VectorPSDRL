@@ -6,7 +6,13 @@ N_EPISODES = 250
 THRESHOLD = 0.98
 
 ENVS = ["3", "4", "5", "6"]
-ALGORITHMS = ["BatchEnsemble", "Ensemble", "NeuralLinear"]
+ALGORITHMS = [
+    "ShallowBatchEnsemble",
+    "DeepBatchEnsemble",
+    "ShallowEnsemble",
+    "DeepEnsemble",
+    "NeuralLinear",
+]
 
 
 def set_solved_at_episode(env, algorithm):

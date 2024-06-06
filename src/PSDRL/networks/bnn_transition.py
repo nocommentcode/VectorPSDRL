@@ -72,9 +72,18 @@ class BNNTransition(nn.Module):
         h = self._cell(x, hidden)
         return self.layers(torch.cat((h, x), dim=1)), h
 
-    def predict(self, x: torch.tensor, hidden: torch.tensor):
+    def predict(
+        self, x: torch.tensor, hidden: torch.tensor, ensemble_index: int = None
+    ):
         with torch.no_grad():
-            x = torch.concatenate([x for _ in range(self.ensemble_size)], 0)
-            h = torch.concatenate([hidden for _ in range(self.ensemble_size)], 0)
+            h = self._cell(x, hidden)
 
-            return self.forward(x, h)
+            output = torch.cat((h, x), dim=1)
+            for layer in self.layers:
+                # run ensemble layer only on required index
+                if isinstance(layer, BootstreappedEnsembleLinear):
+                    output = layer(output, ensemble_index=ensemble_index)
+                else:
+                    output = layer(output)
+
+            return output, h

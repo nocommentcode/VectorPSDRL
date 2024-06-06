@@ -28,6 +28,10 @@ class EnsembleLinear(BootstreappedEnsembleLinear):
     def ensemble_forward(self, x):
         return torch.einsum("jmi,jio->jmo", x, self.weight)
 
+    def single_forward(self, x, ensemble_index):
+        weight = self.weight[ensemble_index]
+        return x.matmul(weight)
+
     def reset_parameters(self):
         super().reset_parameters()
         WEIGHT_INIT(self.weight)

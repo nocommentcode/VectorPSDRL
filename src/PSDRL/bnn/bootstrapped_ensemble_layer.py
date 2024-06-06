@@ -27,23 +27,31 @@ class BootstreappedEnsembleLinear(nn.Module):
             bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
             torch.nn.init.uniform_(self.bias, -bound, bound)
 
-    def forward(self, x):
+    def forward(self, x, ensemble_index=None):
         """
         Runs the ensemble layer
 
         params:
             - x: N x I tensor
+            - ensemble_index: optional ensemble to isolate
         returns"
             - out: N x O tensor
         """
-        # x -> J, M, I
-        x = self.split_batch_to_ensemble_chunks(x)
+        if ensemble_index is None:
+            # x -> J, M, I
+            x = self.split_batch_to_ensemble_chunks(x)
 
-        # output -> J, M, O
-        output = self.ensemble_forward(x)
+            # output -> J, M, O
+            output = self.ensemble_forward(x)
 
-        # b -> J, 1, O
-        b = self.bias.unsqueeze(1)  # J, 1, O
+            # b -> J, 1, O
+            b = self.bias.unsqueeze(1)  # J, 1, O
+        else:
+            # output -> N, O
+            output = self.single_forward(x, ensemble_index)
+
+            # b -> 1, O
+            b = self.bias[ensemble_index].unsqueeze(0)
 
         # output -> J, M, O
         output = output + b
@@ -84,6 +92,20 @@ class BootstreappedEnsembleLinear(nn.Module):
             - x: J x M x I tensor
         returns:
             - J x M x O tensor
+        """
+        raise NotImplementedError(
+            "ensemble_forward not implemented with AbstractEnsembleLinear"
+        )
+
+    def single_forward(self, x, ensemble_index):
+        """
+        Forward method for a single ensembe
+        params:
+            - x: N x I tensor
+            - ensemble_index: ensemble to forward
+
+        returns:
+            - N x O tensor
         """
         raise NotImplementedError(
             "ensemble_forward not implemented with AbstractEnsembleLinear"
