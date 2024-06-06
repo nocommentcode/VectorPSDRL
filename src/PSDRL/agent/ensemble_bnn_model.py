@@ -1,3 +1,7 @@
+import numpy as np
+import torch
+
+from ..common.utils import create_state_action_batch
 from ..common.replay import Dataset
 from ..bnn.ensemble_linear import EnsembleLinear
 from ..bnn.batch_ensemble_layer import BatchEnsembleLinear
@@ -21,6 +25,7 @@ class AEnsembleBNNModel(EnvModel):
         random: RandomState,
     ) -> None:
         super().__init__(config, env_dim, actions, device)
+        self.random = random
 
         # transition model
         self.transition_network = BNNTransition(
@@ -33,6 +38,9 @@ class AEnsembleBNNModel(EnvModel):
             random,
         )
 
+        self.ensemble_size = config["algorithm"]["ensemble_size"]
+        self.exploration_mode = config["algorithm"]["exploration"]
+
         self.transition_trainer = TransitionModelTrainer(
             config["transition"],
             self.transition_network,
@@ -42,12 +50,70 @@ class AEnsembleBNNModel(EnvModel):
             self.num_actions,
             self.device,
         )
+        self.reset_diversity_measure()
+        self.sample()
+
+    def reset_diversity_measure(self):
+        self.diversity_std = []
+
+    def record_diversity(self, output):
+        self.diversity_std.append(output.std(0).sum().item())
+
+    def flush_diversity(self):
+        std = np.array(self.diversity_std).mean()
+        self.reset_diversity_measure()
+        return std
+
+    def sample_ensemble(self, output, record_deversity=False):
+        output = output.view((self.ensemble_size, -1, *output.shape[1:]))
+
+        if record_deversity:
+            self.record_diversity(output)
+
+        return output[self.sample_index]
+
+    def predict(self, obs: torch.tensor, hidden_state: torch.tensor = None):
+        # set hidden state to current hidden if not specified
+        if hidden_state is None:
+            hidden_state = self.prev_state
+
+        obs, h = create_state_action_batch(
+            obs, self.actions, hidden_state, self.num_actions, self.device
+        )
+
+        return self.transition_network.predict(obs, h)
+
+    def exploration_policy(self, obs: torch.tensor, hidden_state: torch.tensor = None):
+        prediction, h1 = self.predict(obs, hidden_state)
+
+        # sample new model for each step if shallow
+        if self.exploration_mode == "shallow":
+            self.sample()
+
+        # sample ensemble for exploration
+        prediction = self.sample_ensemble(prediction, record_deversity=True)
+        h1 = self.sample_ensemble(h1)
+
+        # calculate states, rewards and terminals
+        states, rewards = prediction[:, :-1], prediction[:, -1]
+        terminals = self.terminal_network.predict(states)
+        return states, rewards.reshape(-1, 1), terminals, h1
+
+    def exploitation_policy(self, obs: torch.tensor, hidden_state: torch.tensor = None):
+        prediction, h1 = self.predict(obs, hidden_state)
+
+        # calculate states, rewards and terminals
+        states, rewards = prediction[:, :-1], prediction[:, -1]
+        terminals = self.terminal_network.predict(states)
+        return states, rewards.reshape(-1, 1), terminals, h1
+
+    def sample(self):
+        self.sample_index = self.random.randint(0, self.ensemble_size)
 
     def train_(self, dataset: Dataset) -> None:
         super().train_(dataset)
-        dataset.logger.add_scalars(
-            "BNN/Ensemble STD", self.transition_network.flush_diversity()
-        )
+        dataset.logger.add_scalars("BNN/Ensemble STD", self.flush_diversity())
+        self.sample()
 
 
 class EnsembleBNNModel(AEnsembleBNNModel):

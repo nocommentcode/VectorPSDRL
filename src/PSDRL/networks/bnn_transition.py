@@ -68,19 +68,6 @@ class BNNTransition(nn.Module):
         self.to(device)
         self.loss = 0
 
-        self.reset_diversity_measure()
-
-    def reset_diversity_measure(self):
-        self.diversity_std = []
-
-    def record_diversity(self, output):
-        self.diversity_std.append(output.std(0).sum().item())
-
-    def flush_diversity(self):
-        std = np.array(self.diversity_std).mean()
-        self.reset_diversity_measure()
-        return std
-
     def forward(self, x: torch.tensor, hidden: torch.tensor):
         h = self._cell(x, hidden)
         return self.layers(torch.cat((h, x), dim=1)), h
@@ -90,17 +77,4 @@ class BNNTransition(nn.Module):
             x = torch.concatenate([x for _ in range(self.ensemble_size)], 0)
             h = torch.concatenate([hidden for _ in range(self.ensemble_size)], 0)
 
-            pred, h = self.forward(x, h)
-
-            # sample one of the  ensembles as the prediction
-            sample_indx = self.random.randint(0, self.ensemble_size)
-
-            def sample_ensemble(output, record_deversity=False):
-                output = output.view((self.ensemble_size, -1, *output.shape[1:]))
-
-                if record_deversity:
-                    self.record_diversity(output)
-
-                return output[sample_indx]
-
-            return sample_ensemble(pred, record_deversity=True), sample_ensemble(h)
+            return self.forward(x, h)
