@@ -1,5 +1,3 @@
-import math
-
 from ..common.settings import WEIGHT_INIT
 from .bootstrapped_ensemble_layer import BootstreappedEnsembleLinear
 
