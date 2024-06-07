@@ -10,7 +10,7 @@ import torch
 from PSDRL.common.replay import Dataset
 import wandb
 from PSDRL.common.data_manager import DataManager
-from PSDRL.common.utils import init_env, load
+from PSDRL.common.utils import init_env, load, preprocess_image
 from PSDRL.common.logger import Logger
 from PSDRL.agent.psdrl import PSDRL
 from PSDRL.agent import Agent
@@ -87,6 +87,38 @@ def plot_value(size: int, agent: PSDRL, logger: Logger, timestep: int):
     logger.log_image(timestep, img, "Value")
 
 
+def log_correct_path(env: gym.Env, agent: PSDRL):
+    def get_right_action():
+        row = env._row
+        col = env._column
+        return env._action_mapping[row, col]
+
+    agent.model.reset_hidden_state()
+    obs = env.reset()
+    for time in range(env._size):
+        right_a = get_right_action()
+        print(right_a)
+
+        obs, is_image = preprocess_image(obs)
+        obs = torch.from_numpy(obs).float().to(agent.device)
+        obs = agent.model.embed_observation(obs)
+        states, rewards, terminals, h = agent.model.exploration_policy(obs)
+
+        obs, reward, done, _ = env.step(right_a)
+
+        pred_state = states[right_a]
+        pred_state = pred_state.detach().cpu().numpy().reshape((env._size, env._size))
+        pred_rew = rewards[right_a]
+        pred_terminals = terminals[right_a]
+
+        print(f"Time {time}:")
+        print(
+            f"{reward},{done} {'   '*env._size}{pred_rew[0].detach().cpu().numpy()}, {pred_terminals[0].detach().cpu().numpy()}"
+        )
+        for act, pred in zip(obs, pred_state):
+            print(act, pred)
+
+
 def early_stop(early_stop_config, dataset: Dataset) -> bool:
     if not early_stop_config["enabled"]:
         return False
@@ -134,6 +166,7 @@ def run_experiment(
                 )
 
                 plot_value(env._size, agent, logger, experiment_step)
+                log_correct_path(test_env, agent)
 
             agent.set_to_exploration()
             action = agent.select_action(current_observation, episode_step)
