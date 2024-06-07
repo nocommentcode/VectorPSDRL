@@ -107,7 +107,9 @@ def log_correct_path(env: gym.Env, agent: PSDRL):
         obs, reward, done, _ = env.step(right_a)
 
         pred_state = states[right_a]
-        pred_state = pred_state.detach().cpu().numpy().reshape((env._size, env._size))
+        pred_state = (
+            pred_state.detach().cpu().numpy().reshape((env._size, env._size)).round(1)
+        )
         pred_rew = rewards[right_a]
         pred_terminals = terminals[right_a]
 
@@ -115,7 +117,7 @@ def log_correct_path(env: gym.Env, agent: PSDRL):
 
         print(f"Time {time}:")
         print(
-            f"{reward},{done} {'   '*env._size}{pred_rew[0].detach().cpu().numpy()}, {pred_terminals[0].detach().cpu().numpy()}"
+            f"{reward},{done} {'   '*env._size}{pred_rew[0].detach().cpu().numpy().round(3)}, {pred_terminals[0].detach().cpu().numpy().round(3)}"
         )
         for act, pred in zip(obs, pred_state):
             print(act, pred)
@@ -149,6 +151,8 @@ def run_experiment(
 ):
     ep = 0
     experiment_step = 0
+    log_correct_path(test_env, agent)
+    dfd
 
     while experiment_step < steps:
         episode_step = 0
