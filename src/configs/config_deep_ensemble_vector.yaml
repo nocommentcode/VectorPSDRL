@@ -12,7 +12,7 @@ algorithm:
   name: DeepEnsemble
   bayes: ensemble
   exploration: deep
-  ensemble_size: 4
+  ensemble_size: 10
   reward_prior: 1e-1
   transition_prior: 1e-3
   update_freq: 1e1
@@ -25,14 +25,14 @@ algorithm:
 
 early_stop:
   enabled: true
-  n_episodes: 250
+  n_episodes: 20
   threshold: 0.98
 
 experiment:
   suite: bsuite
   env: 5
   test: true
-  steps: 1e6
+  steps: 1e4
   time_limit: 27000
   test_freq: 1e2
   name: ""

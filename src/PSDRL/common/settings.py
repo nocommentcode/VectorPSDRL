@@ -17,7 +17,7 @@ AE_LOSS_F = torch.nn.MSELoss()
 AE_OPTIM = torch.optim.Adam
 
 # Terminal predictor
-TP_THRESHOLD = 0.5
+TP_THRESHOLD = 10
 TP_LOSS_F = torch.nn.MSELoss()
 TP_OPTIM = torch.optim.Adam
 
