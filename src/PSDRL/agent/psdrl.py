@@ -122,7 +122,6 @@ class PSDRL:
         with the current sampled model (Equation 8).
         """
         states, rewards, terminals, h = self.model.exploitation_policy(obs)
-        print(states.shape, rewards.shape, terminals.shape, h.shape)
         v = self.discount * (
             self.value_network.predict(torch.cat((states, h), dim=1))
             * (terminals < TP_THRESHOLD)
@@ -131,7 +130,6 @@ class PSDRL:
 
         # reshape to num_predictions, actions, 1
         values = values.reshape((-1, self.num_actions, 1))
-        print(values.shape)
 
         # find max value action for each prediction
         candidate_actions = []

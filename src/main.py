@@ -1,9 +1,12 @@
+from io import BytesIO
 import os
 import argparse
 
+from matplotlib import pyplot as plt
 import numpy as np
 from ruamel.yaml import YAML
 import gym
+import torch
 from PSDRL.common.replay import Dataset
 import wandb
 from PSDRL.common.data_manager import DataManager
@@ -29,6 +32,59 @@ def run_test_episode(env: gym.Env, agent: PSDRL, time_limit: int):
         episode_step += 1
         done = done or episode_step == time_limit
     return episode_reward
+
+
+import seaborn as sns
+from PIL import Image
+
+
+def plot_value(size: int, agent: PSDRL, logger: Logger, timestep: int):
+    def build_all_states():
+        states = []
+
+        def build_states_for_time(time):
+            states = []
+            for pos in range(size):
+                state = []
+                for _ in range(time):
+                    state.append([0 for _ in range(size)])
+
+                state.append([0 if i != pos else 1 for i in range(size)])
+
+                for _ in range(size - time - 1):
+                    state.append([0 for _ in range(size)])
+
+                states.append(np.array(state).flatten())
+
+            return states
+
+        for time in range(size):
+            states += build_states_for_time(time)
+
+        return torch.FloatTensor(states).to(agent.device)
+
+    states = build_all_states()
+    h = torch.zeros((len(states), agent.model.transition_network.gru_dim)).to(
+        agent.model.device
+    )
+    v = agent.discount * (agent.value_network.predict(torch.cat((states, h), dim=1)))
+    values = v.view((size, size)).detach().cpu().numpy()
+
+    # remove impossible states
+    for time in range(len(values)):
+        for j in range(time + 1, size):
+            values[time, j] = 0
+
+    # plot heatmap and save to pil image
+    plt.close()
+    ax = sns.heatmap(values, linewidth=0.5)
+    buf = BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    img = Image.open(buf)
+
+    # log
+    logger.log_image(timestep, img, "Value")
 
 
 def early_stop(early_stop_config, dataset: Dataset) -> bool:
@@ -76,6 +132,8 @@ def run_experiment(
                 print(
                     f"Episode {ep}, Timestep {experiment_step}, Test Reward {test_reward}"
                 )
+
+                plot_value(env._size, agent, logger, experiment_step)
 
             agent.set_to_exploration()
             action = agent.select_action(current_observation, episode_step)

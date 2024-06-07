@@ -48,6 +48,9 @@ class DataManager:
         with (pathlib.Path(self.logdir) / "metrics.jsonl").open("a") as f:
             f.write(json.dumps({"Timestep": timestep, **dict(log["scalars"])}) + "\n")
 
+    def log_image(self, name: str, image, timestep: int):
+        wandb.log({name: wandb.Image(image)}, timestep)
+
     def save(self, agent: "PSDRL", timestep: int):
         path = self.logdir + "checkpoints/" + str(timestep) + "/"
         os.mkdir(path)

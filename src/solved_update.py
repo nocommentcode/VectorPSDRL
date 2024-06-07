@@ -1,3 +1,4 @@
+import argparse
 import wandb
 import numpy as np
 
@@ -5,7 +6,6 @@ PROJECT = "qmul_research/VectorPSDRL"
 N_EPISODES = 250
 THRESHOLD = 0.98
 
-ENVS = ["3", "4", "5", "6"]
 ALGORITHMS = [
     "ShallowBatchEnsemble",
     "DeepBatchEnsemble",
@@ -44,8 +44,17 @@ def set_solved_at_episode(env, algorithm):
         run.summary.update()
 
 
-for env in ENVS:
-    for alg in ALGORITHMS:
-        print(f"{env} - {alg}: ")
-        set_solved_at_episode(env, alg)
-        print("\n\n")
+def run(envs):
+    for env in envs:
+        for alg in ALGORITHMS:
+            print(f"{env} - {alg}: ")
+            set_solved_at_episode(env, alg)
+            print("\n\n")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-e", nargs="+", required=True, type=str)
+    args = parser.parse_args()
+
+    run(args.e)

@@ -23,6 +23,9 @@ class Logger:
         )
         self.data_manager.update(self.log, timestep)
 
+    def log_image(self, timestep: int, image, name):
+        self.data_manager.log_image(name, image, timestep)
+
     def add_replay_statistics(self, episodes: list):
         n_episodes = len(episodes)
         episode_returns = [ep["cum_rew"] for ep in episodes]
