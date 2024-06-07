@@ -151,8 +151,6 @@ def run_experiment(
 ):
     ep = 0
     experiment_step = 0
-    log_correct_path(test_env, agent)
-    dfd
 
     while experiment_step < steps:
         episode_step = 0
