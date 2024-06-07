@@ -119,7 +119,8 @@ def log_correct_path(env: gym.Env, agent: PSDRL):
         agent.model.set_hidden_state(h[right_a])
 
         print(f"Time {time}:")
-        print(f"{reward},{done} {'   '*env._size}{pred_rew}, {pred_terminals}")
+        print(pred_rew)
+        print(f"{reward},{done} {' '*env._size}{str(pred_rew)}, {str(pred_terminals)}")
         for act, pred in zip(obs, pred_state):
             print(act, pred)
 
