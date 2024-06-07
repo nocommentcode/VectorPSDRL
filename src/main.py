@@ -111,6 +111,8 @@ def log_correct_path(env: gym.Env, agent: PSDRL):
         pred_rew = rewards[right_a]
         pred_terminals = terminals[right_a]
 
+        agent.model.set_hidden_state(h[right_a])
+
         print(f"Time {time}:")
         print(
             f"{reward},{done} {'   '*env._size}{pred_rew[0].detach().cpu().numpy()}, {pred_terminals[0].detach().cpu().numpy()}"
